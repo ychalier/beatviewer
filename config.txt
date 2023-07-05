@@ -1,0 +1,179 @@
+# ---------------------------------------------------------------------------- #
+# SPECTRAL FLUX                                                                #
+# -----------------------------------------------------------------------------#
+
+# Audio window size for computing FFT.
+# Default: 1024
+audio_window_size	1024
+
+# Number of new samples in the window at each iteration. It will set the
+# sampling rate for the onset strength signal. Given the audio sampling rate Fs,
+# and the hop size H, the OSS sampling rate will be FsO = Fs / H. For
+# Fs = 44100 and H = 128, we have FsO = 344.53 Hz.
+# Default: 128
+audio_hop_size	128
+
+# The spectral flux is compressed to reduce the dynamic range of the signal, and
+# adapt it to the human hearing mechanism which is logarithmically sensitive to
+# amplitude. Set to 0 to ignore compression. Greater values (1000) will deaden
+# strong values and make lower values have more impact.
+# Default: 1
+compression_gamma	1
+
+# After compression, frequency bins with levels below this threshold are set to
+# zero. The value is specified in dB.
+# Default: -74
+noise_cancellation_level	-74
+
+# The width of windowing function applied to the spectral flux, to make it
+# smoother. This acts as a low-pass filter. The greater the width, the lower
+# the cutoff frequency will be. At 15, it is about 7 Hz.
+# Default: 15
+hamming_window_size	15
+
+
+# ---------------------------------------------------------------------------- #
+# ONSET STRENGTH SIGNAL                                                        #
+# -----------------------------------------------------------------------------#
+
+# Number of OSS samples used to compute the OSS mean and the OSS variance.
+# Default: 1024
+oss_buffer_size	1024
+
+# If the OSS becomes greater than this number of standard deviation above the
+# mean, an onset is detected.
+# Default: 0.1
+onset_threshold	0.1
+
+# If the variance is too small, this absolute threshold is used.
+# Default: 5.0
+onset_threshold_min 5.0
+
+
+# ---------------------------------------------------------------------------- #
+# TEMPO ESTIMATION                                                             #
+# -----------------------------------------------------------------------------#
+
+# Number of OSS samples used to estimate the tempo.
+# Default: 2048
+oss_window_size	2048
+
+# Number of new samples in the window at each iteration. If FsO is the OSS
+# sampling rate and H is the hop size, a new tempo is estimated with rate
+# FsO / H. With FsO = 344.53 Hz, this yields 2.7 Hz.
+# Default: 128
+oss_hop_size	128
+
+# The OSS is autocorrelated to find tempo lag candidates. This is computed by
+# performing an FFT and a IFFT on the OSS. A power compression is applied in
+# the frequency domain. Smaller values will increase the lag resolution but
+# negatively impact noise.
+# Default: 0.5
+frequency_domain_compression	0.5
+
+# Minimum BPM detected.
+# Default: 50
+min_bpm_detection	50
+
+# Maximum BPM detected.
+# Default: 210
+max_bpm_detection	210
+
+# Number of tempo candidates considered when estimating tempo.
+# Default: 10
+tempo_candidates	10
+
+# Detected tempi are added to an accumulated sum. This sum decreases overtime to
+# allow for tempo variation detection. The greater the value (0.99, 0.999) the
+# more stable the estimator is, but the longer it takes for new tempi to be
+# detected.
+# Default: 0.9 
+tempo_accumulator_decay	0.9
+
+# The tempo accumulated sum is made of gaussian curves centered on each detected
+# tempi. This gaussian width allows for getting over slight variations.
+# Default: 10
+tempo_accumulator_gaussian_width	10
+
+# If the result BPM is lower than this, it gets doubled.
+# Default: 90
+min_bpm_rescaled	90
+
+# If the result BPM is greater than this, it gets halved.
+# Default: 180
+max_bpm_rescaled	180
+
+
+# ---------------------------------------------------------------------------- #
+# CUMULATIVE BEAT STRENGTH SIGNAL                                              #
+# -----------------------------------------------------------------------------#
+
+# Number of CBSS samples used to determined the previous beat location.
+# Default: 512
+cbss_buffer_size	512
+
+# The log-gaussian width around previous beat locations.
+# Default: 300
+cbss_eta	300
+
+# Trade-off between the OSS and a pure periodic signal. It takes values between
+# 0 and 1. At 0, only the OSS is considered. At 1, only the periodic signal is
+# considered.
+# Default: 0.9
+cbss_alpha	0.9
+
+
+# ---------------------------------------------------------------------------- #
+# BEAT PREDICTION SIGNAL                                                       #
+# -----------------------------------------------------------------------------#
+
+# Offline latency correction factor, in number of OSS samples. See Section 6.1.
+# of *Musical Robot Swarms and Equilibria* (Krzyżaniak, 2020) for details.
+# Default: 0
+bps_epsilon_o	0
+
+# Realtime latency correction factor, in number of OSS samples. See Section 6.2.
+# of *Musical Robot Swarms and Equilibria* (Krzyżaniak, 2020) for details.
+# Default: 0
+bps_epsilon_r	0
+
+# Beat trigger index. Greater values means detecting beats earlier.
+# Default: 20 
+bps_epsilon_t	20
+
+# Width of the gaussian representing the next beat locations.
+# Default: 10
+bps_gaussian_width	10
+
+# Number of samples for which beat locations are predicted, in the future. As
+# this is a cumulative process, bigger buffer will result in a more stable
+# behavior.
+# Default: 512
+bps_buffer_size	512
+
+# Ratio of samples ignored right after a beat is detected, relative to the
+# tempo lag (ie. the number of samples between two beats).
+# Default: 0.4
+bps_cooldown_ratio	0.4
+
+
+# ---------------------------------------------------------------------------- #
+# KEY MAP                                                                      #
+# -----------------------------------------------------------------------------#
+
+# Increase the value of bps_epsilon_t.
+# Default: page up
+key_trigger_beats_earlier	page up
+
+# Decrease the value of bps_epsilon_t.
+# Default: page down
+key_trigger_beats_later	page down
+
+# Change tracking mode to default.
+# Default: f9
+key_set_mode_regular	f9
+
+# Change tracking mode to tempo locked, where current BPM is locked and CBSS
+# will only depend on the so generated pulse train.
+# Default: f10
+key_set_mode_tempo_locked	f10

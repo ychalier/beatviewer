@@ -1,0 +1,11 @@
+keyboard
+matplotlib
+numpy
+opencv-python
+pygame
+pyvirtualcam
+scipy
+sounddevice
+soundfile
+tqdm
+websockets

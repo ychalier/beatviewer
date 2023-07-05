@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.log
+*.egg-info
+dist
+*.bin
+*.wav
+*.tsv
+*.webm
+.ipynb_checkpoints
+*.mp4
+*.json
+*.gif
+*.mp3
+build/
+assets/

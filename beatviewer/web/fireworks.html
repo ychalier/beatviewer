@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fireworks</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            background: #101010;
+        }
+
+        canvas {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas-visual"></canvas>
+    <script src="socket.js"></script>
+    <script>
+        window.addEventListener("load", () => {
+
+            const PALETTES = {
+                green: [
+                    [91, 255, 146],
+                    [63, 178, 102],
+                    [35, 101, 58],
+                ],
+                colors: [
+                    [49, 160, 196],
+                    [217, 53, 192],
+                    [117, 210, 120],
+                    [233, 89, 89],
+                    [231, 200, 90]
+                ],
+                dark: [
+                    [53, 4, 57],
+                    [86, 8, 121],
+                    [114, 11, 228],
+                    [91, 12, 68]
+                ]
+            };
+
+            const parser = new ArgumentParser();
+            parser.add_argument("uri", "ws://localhost:8765", "string");
+            parser.add_argument("p", 0.5, "float");
+            parser.add_argument("line_width", 2.5, "float");
+            parser.add_argument("palette", "colors", "string", [...Object.keys(PALETTES)]);
+            const args = parser.parse_args();
+
+            const PALETTE = PALETTES[args.palette];
+
+            function geometric() {
+                let p = args.p;
+                let u = Math.random();
+                if (u === 0.0) {
+                    u = Math.random();
+                }
+                return Math.floor(Math.log2(u) / Math.log2(1.0 - p)) + 1;
+            }
+
+            class Firework {
+                constructor(cx, cy, n, alpha, speed, duration, color) {
+                    this.cx = cx;
+                    this.cy = cy;
+                    this.n = n;
+                    this.alpha = null;
+                    this.angles = [];
+                    this.set_alpha(alpha);
+                    this.speed = speed;
+                    this.t0 = null;
+                    this.duration = duration;
+                    this.color = color;
+                }
+
+                set_alpha(alpha) {
+                    this.alpha = alpha;
+                    this.angles = [];
+                    for (let k = 0; k < this.n; k++) {
+                        this.angles.push(this.alpha + Math.PI * k / this.n);
+                        this.angles.push(this.alpha + Math.PI * k / this.n + Math.PI);
+                    }
+                }
+
+                draw(context) {
+                    const now = new Date();
+                    if (this.t0 == null) {
+                        this.t0 = now;
+                    }
+                    const elapsed = (now - this.t0) / 1000;
+                    const progress = Math.min(1, elapsed / this.duration);
+                    const opacity = 1 - Math.pow(progress, 0.8);
+                    const distance = this.speed * Math.pow(elapsed, 0.5) + 1;
+                    context.strokeStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${opacity})`;
+                    context.beginPath();
+                    this.angles.forEach(angle => {
+                        context.moveTo(this.cx, this.cy);
+                        context.lineTo(this.cx + distance * Math.cos(angle), this.cy + distance * Math.sin(angle));
+                    });
+                    context.stroke();
+                    return opacity;
+                }
+            }
+
+            class Visual {
+                constructor() {
+                    this.canvas = document.getElementById("canvas-visual");
+                    this.height = window.innerHeight;
+                    this.width = window.innerWidth;
+                    this.canvas.width = this.width;
+                    this.canvas.height = this.height;
+                    this.context = this.canvas.getContext("2d");
+                    this.fireworks = [];
+                }
+
+                clear() {
+                    this.context.clearRect(0, 0, this.width, this.height);
+                }
+
+                generate_firework() {
+                    const cx = Math.floor(Math.random() * this.width);
+                    const cy = Math.floor(Math.random() * this.height);
+                    const n = geometric() + 1;
+                    const alpha = Math.random() * 2 * Math.PI;
+                    const speed = Math.random() * 500 + 750;
+                    const duration = Math.random() / 2 + 0.5;
+                    const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+                    const firework = new Firework(cx, cy, n, alpha, speed, duration, color);
+                    return firework;
+                }
+
+                add_firework() {
+                    this.fireworks.push(this.generate_firework());
+                }
+
+                draw() {
+                    this.clear();
+                    this.context.lineWidth = args.line_width;
+                    const to_delete = [];
+                    this.fireworks.forEach((star, i) => {
+                        const opacity = star.draw(this.context);
+                        if (opacity <= 0.01) {
+                            to_delete.push(i);
+                        }
+                    });
+                    for (let i = to_delete.length - 1; i >= 0; i--) {
+                        this.fireworks.splice(i, 1);
+                    }
+                }
+
+            }
+
+            const visual = new Visual();
+
+            connect_socket_server(args.uri, () => {
+                visual.add_firework();
+            }, null, null);
+
+            function update() {
+                visual.draw();
+                requestAnimationFrame(update);
+            }
+            update();
+
+        });
+    </script>
+</body>
+
+</html>
