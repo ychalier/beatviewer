@@ -14,3 +14,5 @@ dist
 *.mp3
 build/
 assets/
+!examples/*.gif
+!examples/*.mp4
