@@ -13,7 +13,8 @@ class FileAudioSource(AudioSource):
     signals are averaged to a mono signal. 
     """
 
-    def __init__(self, config, path, realtime=False, record_path=None):
+    def __init__(self, config, path, realtime=False, record_path=None,
+                 pbar_kwargs=None):
         logging.info(
             "Creating file audio source from '%s', realtime is %s",
             path,
@@ -28,13 +29,15 @@ class FileAudioSource(AudioSource):
         self.last_window_update = 0
         self.window_update_period = self.config.audio_hop_size / sr
         self.pbar = None
+        self.pbar_kwargs = {} if pbar_kwargs is None else pbar_kwargs
     
     def setup(self):
         AudioSource.setup(self)
         self.pbar = tqdm.tqdm(
             total=len(self.data),
             unit="sample",
-            unit_scale=True
+            unit_scale=True,
+            **self.pbar_kwargs
         )
 
     def _update_window(self, window):

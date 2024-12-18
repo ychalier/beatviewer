@@ -1,9 +1,27 @@
+import dataclasses
+import enum
 import logging
 
 import keyboard
 
 from .graph import Graph
 from .pipelines.pipeline import Pipeline
+
+
+@enum.unique
+class EventFlag(enum.Enum):
+    ONSET = 0
+    BEAT = 1
+    BPM = 2
+
+
+@dataclasses.dataclass
+class BeatTrackingEvent:
+
+    flag: EventFlag
+    frame: int
+    time: int
+    value: float | None
 
 
 class BeatTracker(Pipeline):
@@ -19,7 +37,8 @@ class BeatTracker(Pipeline):
         graph_size=512,
         graph_fps=30,
         keyboard_events=False,
-        output_path=None
+        output_path=None,
+        register_events: bool = False,
     ):
         logging.info("Creating beat tracker")
         Pipeline.__init__(self, config, audio_source)
@@ -35,6 +54,18 @@ class BeatTracker(Pipeline):
         self.sampling_rate_oss = None
         self.output_path = output_path
         self.output_file = None
+        self.register_events = register_events
+        self.events: list[BeatTrackingEvent] = []
+    
+    def register_event(self, flag: EventFlag, value: float | None = None):
+        if not self.register_events:
+            return
+        self.events.append(BeatTrackingEvent(
+            flag,
+            self.frame_index,
+            self.frame_index / self.sampling_rate_oss,
+            value
+        ))
         
     def setup(self):
         logging.info("Setting up beat tracker")
@@ -98,18 +129,21 @@ class BeatTracker(Pipeline):
                 value))
 
     def handle_onset(self):
+        self.register_event(EventFlag.ONSET)
         if self.output_path is not None:
             self.write_output_line("ONSET")
         if self.onset_callback is not None:
             self.onset_callback()
     
     def handle_beat(self):
+        self.register_event(EventFlag.BEAT)
         if self.output_path is not None:
             self.write_output_line("BEAT")
         if self.beat_callback is not None:
             self.beat_callback()
     
     def handle_bpm(self):
+        self.register_event(EventFlag.BPM, self.bpm)
         if self.output_path is not None:
             self.write_output_line("BPM", self.bpm)
         if self.bpm_callback is not None:
