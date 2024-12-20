@@ -1,8 +1,12 @@
 import logging
+import math
 
 from .audio_stream_pipeline import AudioStreamPipeline
 from .beat_tracking_pipeline import BeatTrackingPipeline
 from .tempo_estimation_pipeline import TempoEstimationPipepline
+
+
+EXTRA_WARMUP_BEATS = 4
 
 
 class Pipeline(AudioStreamPipeline, BeatTrackingPipeline, TempoEstimationPipepline):
@@ -15,6 +19,7 @@ class Pipeline(AudioStreamPipeline, BeatTrackingPipeline, TempoEstimationPipepli
         self.oss_buffer_counter = None
         self.bpm_flag = False
         self.active = True
+        self.warmup_end = None
 
     def setup(self):
         logging.info("Setting up pipeline")
@@ -40,6 +45,9 @@ class Pipeline(AudioStreamPipeline, BeatTrackingPipeline, TempoEstimationPipepli
                 self.tempo_lag = new_tempo_lag
                 self.bpm_flag = True
                 logging.debug("New tempo lag: %d", self.tempo_lag)
+            if self.warmup_end is None:
+                self.warmup_end = (EXTRA_WARMUP_BEATS + math.ceil(self.frame_index / new_tempo_lag)) * new_tempo_lag
+                logging.info("Setting warmup end to: %d (frame index %d, tempo lag %d)", self.warmup_end, self.frame_index, new_tempo_lag)
 
     def close(self):
         logging.info("Closing pipeline")
@@ -48,3 +56,7 @@ class Pipeline(AudioStreamPipeline, BeatTrackingPipeline, TempoEstimationPipepli
     @property
     def bpm(self):
         return 60 * self.oss_sampling_rate / self.tempo_lag
+    
+    def rewind(self):
+        AudioStreamPipeline.rewind(self)
+        BeatTrackingPipeline.rewind(self)

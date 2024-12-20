@@ -40,3 +40,6 @@ class AudioSource:
         logging.info("Closing audio source")
         if self.record_path is not None:
             self.record_file.close()
+    
+    def rewind(self):
+        pass

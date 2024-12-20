@@ -69,3 +69,7 @@ class FileAudioSource(AudioSource):
     
     def close(self):
         self.pbar.close()
+
+    def rewind(self):
+        self.i = 0
+        self.pbar.reset()

@@ -71,7 +71,7 @@ class Renderer:
         audio_source = FileAudioSource(config, self.audio_path, pbar_kwargs={
             "desc": "Analyzing audio"
         })
-        tracker = BeatTracker(config, audio_source, register_events=True)
+        tracker = BeatTracker(config, audio_source, register_events=True, warmup=True)
         tracker.run()
         self.events = tracker.events
         self.duration = tracker.frame_index / tracker.sampling_rate_oss

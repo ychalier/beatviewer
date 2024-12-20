@@ -147,3 +147,7 @@ class BeatTrackingPipeline:
             self.beat_cooldown = int(self.config.bps_cooldown_ratio * self.tempo_lag)
             logging.debug("Detected beat")
         return self.beat_flag
+    
+    def rewind(self):
+        logging.info("Rewinding beat tracking pipeline")
+        self.frame_index = -1

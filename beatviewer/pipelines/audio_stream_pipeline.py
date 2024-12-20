@@ -35,3 +35,7 @@ class AudioStreamPipeline:
     def close(self):
         logging.info("Closing audio stream pipeline")
         self.audio_source.close()
+    
+    def rewind(self):
+        logging.info("Rewinding audio stream pipeline")
+        self.audio_source.rewind()

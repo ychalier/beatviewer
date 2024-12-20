@@ -40,6 +40,7 @@ class BeatTracker(Pipeline):
         keyboard_events=False,
         output_path=None,
         register_events: bool = False,
+        warmup: bool = False,
     ):
         logging.info("Creating beat tracker")
         Pipeline.__init__(self, config, audio_source)
@@ -57,6 +58,8 @@ class BeatTracker(Pipeline):
         self.output_path = output_path
         self.output_file = None
         self.register_events = register_events
+        self.warmup: bool = warmup
+        self.rewound: bool = False
         self.events: list[BeatTrackingEvent] = []
     
     def register_event(self, flag: EventFlag, value: float | None = None):
@@ -152,11 +155,18 @@ class BeatTracker(Pipeline):
         if self.bpm_callback is not None:
             self.bpm_callback(self.bpm)
     
+    def rewind(self):
+        Pipeline.rewind(self)
+        self.events = []
+        self.rewound = True
+    
     def run(self):
         self.setup()
         logging.info("Done setting up beat tracker")
         i = 0
         while self.running and self.active:
+            if self.warmup and self.warmup_end is not None and self.frame_index >= self.warmup_end and not self.rewound:
+                self.rewind()
             i += 1
             try:
                 if i == 10:
