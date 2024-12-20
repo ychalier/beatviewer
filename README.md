@@ -13,7 +13,7 @@ This program requires a working installation of [Python 3](https://www.python.or
 1. Download the [latest release](https://github.com/ychalier/beatviewer/releases)
 2. Install it with `pip`:
     ```console
-    pip install ~/Downloads/beatviewer-1.0.0.tar.gz
+    pip install ~/Downloads/beatviewer-1.1.0.tar.gz
     ```
 
 Some resources (OBS script, tools, JS visuals) are available through direct download and are attached to the [latest release](https://github.com/ychalier/beatviewer/releases).
@@ -35,6 +35,14 @@ python -m beatviewer <visualizer-name> <visualizer-arguments+>
 ```
 
 For a quick test, you can try the `galaxy` visualizer. You'll find a list with more options and instructions on the [wiki](https://github.com/ychalier/beatviewer/wiki/).
+
+## Video Rendering
+
+You can use the [render.py](render.py) script to automatically edit a video based on the beats of an audio file. You'll find all details on the [wiki](https://github.com/ychalier/beatviewer/wiki/), but basic usage is:
+
+```console
+python render.py <audio-path> <video-path> <output-path> [-m {seek,slow}]
+```
 
 ## Contributing
 
