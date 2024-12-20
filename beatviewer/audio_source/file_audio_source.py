@@ -30,6 +30,7 @@ class FileAudioSource(AudioSource):
         self.window_update_period = self.config.audio_hop_size / sr
         self.pbar = None
         self.pbar_kwargs = {} if pbar_kwargs is None else pbar_kwargs
+        self.length = len(self.data)
     
     def setup(self):
         AudioSource.setup(self)
@@ -60,7 +61,7 @@ class FileAudioSource(AudioSource):
             else:
                 window[k + j] = int(sum(self.data[self.i]) / self.data.shape[1])
             self.i += 1
-            self.pbar.update()
+        self.pbar.update(min(self.config.audio_hop_size, self.length - self.pbar.n))
     
     def close(self):
         self.pbar.close()
