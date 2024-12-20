@@ -101,3 +101,34 @@ class Config:
     
     def update(self, key, value):
         setattr(self, key, value)
+    
+    def to_dict(self):
+        return {
+            "audio_window_size": self.audio_window_size,
+            "audio_hop_size": self.audio_hop_size,
+            "compression_gamma": self.compression_gamma,
+            "noise_cancellation_threshold": self.noise_cancellation_threshold,
+            "hamming_window_size": self.hamming_window_size,
+            "oss_buffer_size": self.oss_buffer_size,
+            "onset_threshold": self.onset_threshold,
+            "onset_threshold_min": self.onset_threshold_min,
+            "oss_window_size": self.oss_window_size,
+            "oss_hop_size": self.oss_hop_size,
+            "frequency_domain_compression": self.frequency_domain_compression,
+            "min_bpm_detection": self.min_bpm_detection,
+            "max_bpm_detection": self.max_bpm_detection,
+            "tempo_candidates": self.tempo_candidates,
+            "tempo_accumulator_decay": self.tempo_accumulator_decay,
+            "tempo_accumulator_gaussian_width": self.tempo_accumulator_gaussian_width,
+            "min_bpm_rescaled": self.min_bpm_rescaled,
+            "max_bpm_rescaled": self.max_bpm_rescaled,
+            "cbss_buffer_size": self.cbss_buffer_size,
+            "cbss_eta": self.cbss_eta,
+            "cbss_alpha": self.cbss_alpha,
+            "bps_epsilon_o": self.bps_epsilon_o,
+            "bps_epsilon_r": self.bps_epsilon_r,
+            "bps_epsilon_t": self.bps_epsilon_t,
+            "bps_gaussian_width": self.bps_gaussian_width,
+            "bps_buffer_size": self.bps_buffer_size,
+            "bps_cooldown_ratio": self.bps_cooldown_ratio,
+        }

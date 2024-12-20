@@ -77,7 +77,7 @@ def main():
     parser.add_argument("-c", "--config", type=str, default=None, help="Path to a configuration file (see default 'config.txt')")
     parser.add_argument("-k", "--keyboard-events", action="store_true", help="Monitor keyboard events")
     parser.add_argument("-r", "--record-path", type=str, default=None, help="Record the the audio stream to a local file")
-    parser.add_argument("-o", "--output-path", type=str, default=None, help="Export the beats, onsets and BPM data to a CSV file")
+    parser.add_argument("-o", "--output-path", type=str, default=None, help="Export the beats, onsets and BPM data to a JSON file")
     parser.add_argument("-w", "--warmup", action="store_true", help="Perform a warmup (for offline analysis)")
     action_subparsers = parser.add_subparsers(dest="action")
     for cls in HANDLER_LIST + TOOL_LIST:

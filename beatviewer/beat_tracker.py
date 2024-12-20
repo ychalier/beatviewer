@@ -1,5 +1,6 @@
 import dataclasses
 import enum
+import json
 import logging
 import math
 
@@ -15,6 +16,17 @@ class EventFlag(enum.Enum):
     BEAT = 1
     BPM = 2
 
+    @staticmethod
+    def to_string(flag) -> str:
+        if flag == EventFlag.ONSET:
+            return "ONSET"
+        elif flag == EventFlag.BEAT:
+            return "BEAT"
+        elif flag == EventFlag.BPM:
+            return "BPM"
+        else:
+            return "OTHER"
+
 
 @dataclasses.dataclass
 class BeatTrackingEvent:
@@ -23,6 +35,14 @@ class BeatTrackingEvent:
     frame: int
     time: int
     value: float | None
+
+    def to_dict(self):
+        return {
+            "flag": EventFlag.to_string(self.flag),
+            "frame": self.frame,
+            "time": self.time,
+            "value": self.value
+        }
 
 
 class BeatTracker(Pipeline):
@@ -56,8 +76,7 @@ class BeatTracker(Pipeline):
         self.sampling_rate = None
         self.sampling_rate_oss = None
         self.output_path = output_path
-        self.output_file = None
-        self.register_events = register_events
+        self.register_events = register_events or (self.output_path is not None)
         self.warmup: bool = warmup
         self.rewound: bool = False
         self.events: list[BeatTrackingEvent] = []
@@ -81,17 +100,19 @@ class BeatTracker(Pipeline):
         if self.show_graph:
             self.graph = Graph(self, self.graph_size)
             self.graph.start()
-        if self.output_path is not None:
-            self.output_file = open(self.output_path, "w")
-            self.output_file.write("event_flag\tevent_frame\tevent_time\tevent_value\n")
-            self.output_file.write("SAMPLING_RATE_OSS\t0\t0\t%f\n" % self.sampling_rate_oss)
-            
+
     def close(self):
         logging.info("Closing beat tracker")
         if self.show_graph:
             self.graph.terminate()
         if self.output_path is not None:
-            self.output_file.close()
+            data = {
+                "sampling_rate_oss": self.sampling_rate_oss,
+                "config": self.config.to_dict(),
+                "events": [event.to_dict() for event in self.events]
+            }
+            with open(self.output_path, "w") as file:
+                json.dump(data, file)
     
     def check_keyboard_events(self):
         if keyboard.is_pressed(self.config.key_trigger_beats_earlier):
@@ -121,37 +142,18 @@ class BeatTracker(Pipeline):
         if self.graph is not None and self.frame_index % self.graph_interval == 0:
             self.graph.update()
 
-    def write_output_line(self, key, value=None):
-        if value is None:
-            self.output_file.write("%s\t%d\t%.3f\t\n" % (
-                key,
-                self.frame_index,
-                self.frame_index / self.sampling_rate_oss))
-        else:
-            self.output_file.write("%s\t%d\t%.3f\t%.2f\n" % (
-                key,
-                self.frame_index,
-                self.frame_index / self.sampling_rate_oss,
-                value))
-
     def handle_onset(self):
         self.register_event(EventFlag.ONSET)
-        if self.output_path is not None:
-            self.write_output_line("ONSET")
         if self.onset_callback is not None:
             self.onset_callback()
     
     def handle_beat(self):
         self.register_event(EventFlag.BEAT)
-        if self.output_path is not None:
-            self.write_output_line("BEAT")
         if self.beat_callback is not None:
             self.beat_callback()
     
     def handle_bpm(self):
         self.register_event(EventFlag.BPM, self.bpm)
-        if self.output_path is not None:
-            self.write_output_line("BPM", self.bpm)
         if self.bpm_callback is not None:
             self.bpm_callback(self.bpm)
     
