@@ -1,6 +1,7 @@
 import logging
 import time
 
+import numpy
 import soundfile
 import tqdm
 
@@ -24,7 +25,10 @@ class FileAudioSource(AudioSource):
         self.realtime = realtime
         data, sr = soundfile.read(self.path, dtype="int16", start=0)
         AudioSource.__init__(self, config, int(sr), record_path=record_path)
-        self.data = data
+        if data.shape[1] == 1:
+            self.data = data
+        else:
+            self.data = numpy.sum(data.astype("int32"), axis=1) / data.shape[1]
         self.i = 0
         self.last_window_update = 0
         self.window_update_period = self.config.audio_hop_size / sr
@@ -59,7 +63,7 @@ class FileAudioSource(AudioSource):
             if self.i >= self.data.shape[0]:
                 window[k + j] = 0
             else:
-                window[k + j] = int(sum(self.data[self.i]) / self.data.shape[1])
+                window[k + j] = self.data[self.i]
             self.i += 1
         self.pbar.update(min(self.config.audio_hop_size, self.length - self.pbar.n))
     
