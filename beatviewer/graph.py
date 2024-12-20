@@ -1,5 +1,4 @@
 import logging
-import threading
 import warnings
 
 import matplotlib.animation
@@ -7,17 +6,15 @@ import matplotlib.pyplot
 import numpy
 
 
-class Graph(threading.Thread):
+class Graph:
     """A graph plotting realtime data from a beat tracker. Plots OSS and CBSS
     signals, BPS predicted signal, shows BPM and estimated phase. Everything
     is packed in a thread to be concurrent to original computation.
     """
 
-    def __init__(self, beat_tracker, visualizer_size, fps):
-        threading.Thread.__init__(self, daemon=True)
+    def __init__(self, beat_tracker, visualizer_size):
         self.tracker = beat_tracker
         self.size = visualizer_size
-        self.fps = fps
         self.figure = None
         self.axis = None
         self.plot_oss = None
@@ -30,15 +27,12 @@ class Graph(threading.Thread):
         self.text_bpm = None
         self.animation = None
 
-    def run(self):
-        logging.info("Starting graph thread with ID %d", threading.get_ident())
+    def start(self):
+        logging.info("Starting graph")
 
         warnings.filterwarnings("ignore")
         figure, axis = matplotlib.pyplot.subplots(1, 1)
         self.figure = figure
-
-        # Force the user to use ^C to close the program
-        self.figure.canvas.manager.window.overrideredirect(1)
 
         self.axis = axis
         self.axis.set_xlim(0, 2 * self.size - 1)
@@ -62,41 +56,38 @@ class Graph(threading.Thread):
         
         self.axis.legend(loc="upper right")
 
-        def update(frame, *fargs):
-            max_oss = .1
-            if len(self.tracker.oss_buffer[-self.size:]):
-                max_oss = max(self.tracker.oss_buffer[-self.size:])
-            vmax_l = max(
-                .1,
-                max_oss,
-                max(self.tracker.cbss_buffer[-self.size:])
-            )
-            vmax_r = max(
-                .1,
-                max(self.tracker.bps_buffer[:self.size])
-            )
-            oss_values = self.tracker.oss_buffer[-self.size:]
-            if len(oss_values) < self.size:
-                oss_values = [0] * (self.size - len(oss_values)) + oss_values
-            self.plot_oss.set_ydata(list(map(lambda y: y / vmax_l, oss_values)))
-            self.plot_oss_mean.set_ydata([self.tracker.oss_mean / vmax_l, self.tracker.oss_mean / vmax_l])
-            self.plot_oss_threshold.set_ydata([self.tracker.oss_threshold / vmax_l, self.tracker.oss_threshold / vmax_l])
-            self.plot_cbss.set_ydata(list(map(lambda y: y / vmax_l, self.tracker.cbss_buffer[-self.size:])))
-            self.plot_bps.set_ydata(list(map(lambda y: y / vmax_r, self.tracker.bps_buffer[:self.size])))
-            self.plot_detection_length.set_data([self.size - self.tracker.phi_max - self.tracker.tempo_lag, self.size - self.tracker.phi_max], [self.tracker.cbss_buffer[-self.tracker.phi_max] / vmax_l, self.tracker.cbss_buffer[-self.tracker.phi_max] / vmax_l])
-            self.text_bpm.set_text("%.2f" % (60 * self.tracker.sampling_rate_oss / self.tracker.tempo_lag))
-            self.plot_beat_trigger_index.set_xdata([self.size + self.tracker.config.bps_epsilon_t, self.size + self.tracker.config.bps_epsilon_t])
-            return self.plot_oss, self.plot_cbss, self.plot_bps, self.plot_oss_mean, self.plot_oss_threshold, self.plot_detection_length, self.plot_beat_trigger_index, self.text_bpm
-
-        self.animation = matplotlib.animation.FuncAnimation(self.figure, update, blit=True, interval=round(1000 / self.fps))
-        matplotlib.pyplot.show()
+        matplotlib.pyplot.show(block=False)
+    
+    def update(self):
+        max_oss = .1
+        if len(self.tracker.oss_buffer[-self.size:]):
+            max_oss = max(self.tracker.oss_buffer[-self.size:])
+        vmax_l = max(
+            .1,
+            max_oss,
+            max(self.tracker.cbss_buffer[-self.size:])
+        )
+        vmax_r = max(
+            .1,
+            max(self.tracker.bps_buffer[:self.size])
+        )
+        oss_values = self.tracker.oss_buffer[-self.size:]
+        if len(oss_values) < self.size:
+            oss_values = [0] * (self.size - len(oss_values)) + oss_values
+        self.plot_oss.set_ydata(list(map(lambda y: y / vmax_l, oss_values)))
+        self.plot_oss_mean.set_ydata([self.tracker.oss_mean / vmax_l, self.tracker.oss_mean / vmax_l])
+        self.plot_oss_threshold.set_ydata([self.tracker.oss_threshold / vmax_l, self.tracker.oss_threshold / vmax_l])
+        self.plot_cbss.set_ydata(list(map(lambda y: y / vmax_l, self.tracker.cbss_buffer[-self.size:])))
+        self.plot_bps.set_ydata(list(map(lambda y: y / vmax_r, self.tracker.bps_buffer[:self.size])))
+        self.plot_detection_length.set_data([self.size - self.tracker.phi_max - self.tracker.tempo_lag, self.size - self.tracker.phi_max], [self.tracker.cbss_buffer[-self.tracker.phi_max] / vmax_l, self.tracker.cbss_buffer[-self.tracker.phi_max] / vmax_l])
+        self.text_bpm.set_text("%.2f" % (60 * self.tracker.sampling_rate_oss / self.tracker.tempo_lag))
+        self.plot_beat_trigger_index.set_xdata([self.size + self.tracker.config.bps_epsilon_t, self.size + self.tracker.config.bps_epsilon_t])
+        
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
     
     def terminate(self):
-        logging.info("Closing graph thread")
-        # Matplotlib does not behave well when not in the main thread.
-        # This hacks helps for it to close nicely.
-        root = self.figure.canvas.manager.window._root()
+        logging.info("Closing graph")
         matplotlib.pyplot.close()
-        root.quit()
 
     

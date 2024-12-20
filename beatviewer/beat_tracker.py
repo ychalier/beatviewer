@@ -1,6 +1,7 @@
 import dataclasses
 import enum
 import logging
+import math
 
 import keyboard
 
@@ -35,7 +36,7 @@ class BeatTracker(Pipeline):
         bpm_callback=None,
         show_graph=False,
         graph_size=512,
-        graph_fps=30,
+        graph_fps=15,
         keyboard_events=False,
         output_path=None,
         register_events: bool = False,
@@ -49,6 +50,7 @@ class BeatTracker(Pipeline):
         self.graph = None
         self.graph_size = graph_size
         self.graph_fps = graph_fps
+        self.graph_interval = 1
         self.keybord_events = keyboard_events
         self.sampling_rate = None
         self.sampling_rate_oss = None
@@ -72,8 +74,9 @@ class BeatTracker(Pipeline):
         Pipeline.setup(self)
         self.sampling_rate = self.audio_source.sampling_rate
         self.sampling_rate_oss = self.sampling_rate / self.config.audio_hop_size
+        self.graph_interval = math.ceil(self.sampling_rate_oss / self.graph_fps)
         if self.show_graph:
-            self.graph = Graph(self, self.graph_size, self.graph_fps)
+            self.graph = Graph(self, self.graph_size)
             self.graph.start()
         if self.output_path is not None:
             self.output_file = open(self.output_path, "w")
@@ -84,8 +87,6 @@ class BeatTracker(Pipeline):
         logging.info("Closing beat tracker")
         if self.show_graph:
             self.graph.terminate()
-        if self.show_graph:
-            self.graph.join()
         if self.output_path is not None:
             self.output_file.close()
     
@@ -114,6 +115,8 @@ class BeatTracker(Pipeline):
             self.handle_beat()
         if self.bpm_flag:
             self.handle_bpm()
+        if self.graph is not None and self.frame_index % self.graph_interval == 0:
+            self.graph.update()
 
     def write_output_line(self, key, value=None):
         if value is None:

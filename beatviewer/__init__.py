@@ -73,7 +73,7 @@ def main():
     parser.add_argument("-f", "--audio-file", type=str, default=None, help="Path to a local audio file for 'offline' beat tracking")
     parser.add_argument("-t", "--realtime", action="store_true", help="Make offline beat tracking realtime")
     parser.add_argument("-g", "--graph", action="store_true", help="Plot extracted audio features for in-depth analysis")
-    parser.add_argument("-gf", "--graph-fps", type=float, default=30, help="Refresh rate for the audio features graph")
+    parser.add_argument("-gf", "--graph-fps", type=float, default=15, help="Refresh rate for the audio features graph")
     parser.add_argument("-c", "--config", type=str, default=None, help="Path to a configuration file (see default 'config.txt')")
     parser.add_argument("-k", "--keyboard-events", action="store_true", help="Monitor keyboard events")
     parser.add_argument("-r", "--record-path", type=str, default=None, help="Record the the audio stream to a local file")
