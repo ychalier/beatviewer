@@ -56,7 +56,7 @@ class FFmpegVideoOutput:
 
 class Renderer:
 
-    def __init__(self, audio_path: str, video_path: str, output_path: str):
+    def __init__(self, audio_path: str, video_path: str, output_path: str, config: Config):
         self.audio_path = audio_path
         self.video_path = video_path
         self.output_path = output_path
@@ -65,13 +65,13 @@ class Renderer:
         self.frame_cursor: float = -1
         self.event_cursor: int = 0
         self.reader = VideoReader(self.video_path)
+        self.config = config
 
     def analyze_audio(self):
-        config = Config()
-        audio_source = FileAudioSource(config, self.audio_path, pbar_kwargs={
+        audio_source = FileAudioSource(self.config, self.audio_path, pbar_kwargs={
             "desc": "Analyzing audio"
         })
-        tracker = BeatTracker(config, audio_source, register_events=True, warmup=True)
+        tracker = BeatTracker(self.config, audio_source, register_events=True, warmup=True)
         tracker.run()
         self.events = tracker.events
         self.duration = tracker.frame_index / tracker.sampling_rate_oss
@@ -126,8 +126,8 @@ class SeekOnBeatRenderer(Renderer):
 
 class SlowDownRenderer(Renderer):
 
-    def __init__(self, audio_path: str, video_path: str, output_path: str, decay: float, jumpcut: bool):
-        Renderer.__init__(self, audio_path, video_path, output_path)
+    def __init__(self, audio_path: str, video_path: str, output_path: str, config: Config, decay: float, jumpcut: bool):
+        Renderer.__init__(self, audio_path, video_path, output_path, config)
         self.decay = decay
         self.jumpcut = jumpcut
         self.playback_speed = 1
@@ -144,8 +144,9 @@ class SlowDownRenderer(Renderer):
 
 
 def pipeline(audio_path: str, video_path: str, output_path: str, mode: str,
-             decay: float = 0.9, jumpcut: bool = False, execute: bool = True):
-    base_args = [audio_path, video_path, output_path]
+             config: Config, decay: float = 0.9, jumpcut: bool = False,
+             execute: bool = True):
+    base_args = [audio_path, video_path, output_path, config]
     if mode == "seek":
         renderer = SeekOnBeatRenderer(*base_args)
     elif mode == "slow":
@@ -165,12 +166,17 @@ def main():
     parser.add_argument("audio_path", type=str)
     parser.add_argument("video_path", type=str)
     parser.add_argument("output_path", type=str)
+    parser.add_argument("-c", "--config", type=str, default=None, help="Path to a configuration file (see default 'config.txt')")
     parser.add_argument("-m", "--mode", type=str, default="seek", choices=["seek", "slow"])
     parser.add_argument("-d", "--decay", type=float, default=0.9)
     parser.add_argument("-j", "--jumpcut", action="store_true")
     args = parser.parse_args()
+    if args.config is not None:
+        config = Config.from_file(args.config)
+    else:
+        config = Config(bps_epsilon_t=0)
     pipeline(args.audio_path, args.video_path, args.output_path, args.mode,
-             args.decay, args.jumpcut)
+             config, args.decay, args.jumpcut)
 
 
 if __name__ == "__main__":
